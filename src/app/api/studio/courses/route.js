@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 export async function GET(request) {
   try {
     const coursesRef = collection(db, "published_courses");
-    const q = query(coursesRef, orderBy("publishedAt", "desc"));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(coursesRef);
     
     const courses = [];
     querySnapshot.forEach((doc) => {
@@ -16,6 +15,13 @@ export async function GET(request) {
       });
     });
     
+    // Sort in memory instead of using Firestore orderBy
+    courses.sort((a, b) => {
+      const dateA = new Date(a.publishedAt || 0);
+      const dateB = new Date(b.publishedAt || 0);
+      return dateB - dateA;
+    });
+    
     return NextResponse.json({ 
       success: true, 
       courses 
@@ -23,7 +29,7 @@ export async function GET(request) {
   } catch (error) {
     console.error("Error fetching courses:", error);
     return NextResponse.json(
-      { error: "Failed to fetch courses" },
+      { error: "Failed to fetch courses", details: error.message },
       { status: 500 }
     );
   }

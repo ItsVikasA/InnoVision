@@ -1,16 +1,24 @@
+// app/api/roadmap/route.js
 import { db } from "@/lib/firebase";
-import { getDoc } from "firebase/firestore";
-import { auth } from "@/app/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { NextResponse } from "next/server";
 
-//post route to check roadmap in the database
 export async function POST(req) {
+  try {
     const { roadmapId } = await req.json();
-    const session = await auth();
-    const docRef = doc(db, "users", session.user.email, "roadmaps", roadmapId);
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-        return NextResponse.json({ ...docSnap.data() });
+    if (!roadmapId) return NextResponse.json({ message: "Missing ID" }, { status: 400 });
+
+    // Try public first, then fallback to user-specific (optional)
+    let docRef = doc(db, "public_roadmaps", roadmapId); // if you make some public
+    let snap = await getDoc(docRef);
+
+    if (!snap.exists()) {
+      // Or remove this block if all are private
+      return NextResponse.json({ process: "not_found" }, { status: 404 });
     }
-    return NextResponse.json({process : "Not found"}, {status : 404})
+
+    return NextResponse.json({ ...snap.data(), id: roadmapId });
+  } catch (error) {
+    return NextResponse.json({ message: "Error" }, { status: 500 });
+  }
 }

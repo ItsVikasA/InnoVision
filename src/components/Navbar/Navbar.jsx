@@ -116,9 +116,9 @@ const Navbar = () => {
               duration: 0.1,
               ease: "easeOut",
             }}
-            className="w-[360px] h-screen bg-background/95 backdrop-blur-xl fixed top-0 left-0 flex flex-col justify-between p-4 z-10 sidebar border-r border-slate-200/20 shadow-2xl"
+            className="w-[360px] h-screen bg-background/95 backdrop-blur-xl fixed top-0 left-0 flex flex-col justify-between z-10 sidebar border-r border-slate-200/20 shadow-2xl"
           >
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1 p-4 pb-0">
               <Button
                 variant={"ghost"}
                 className="items-center w-max hover:bg-slate-100/80 transition-all duration-200"
@@ -351,7 +351,7 @@ const Navbar = () => {
                 </nav>
               )}
             </div>
-            <div className="pb-12">
+            <div className="p-4 pt-3 border-t border-slate-200/20 bg-background/95">
               <div className="flex items-center">
                 {session ? (
                   <div className="flex items-center">

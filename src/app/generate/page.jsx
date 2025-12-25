@@ -11,6 +11,10 @@ import { BRANCH_SUBJECTS_PART2 } from "@/lib/engineering-subjects-part2";
 import { BRANCH_SUBJECTS_PART3 } from "@/lib/engineering-subjects-part3";
 import { BRANCH_SUBJECTS_PART4 } from "@/lib/engineering-subjects-part4";
 import { BRANCH_SUBJECTS_PART5 } from "@/lib/engineering-subjects-part5";
+import { 
+    getAvailableStreams, 
+    getSubjectsByClassAndBoard 
+} from "@/lib/curriculum-data";
 
 // Merge all branch subjects
 const ALL_BRANCH_SUBJECTS = {
@@ -98,6 +102,7 @@ export default function Page() {
     const [curriculumData, setCurriculumData] = useState({
         classLevel: "",
         board: "",
+        stream: "",
         subject: "",
         topics: ["", "", ""]
     });
@@ -112,10 +117,34 @@ export default function Page() {
 
     const classLevels = ["LKG", "UKG", "CLASS_1", "CLASS_2", "CLASS_3", "CLASS_4", "CLASS_5", "CLASS_6", "CLASS_7", "CLASS_8", "CLASS_9", "CLASS_10", "CLASS_11", "CLASS_12"];
     const boards = ["CBSE", "STATE"];
+    
+    // Get available streams for Class 11 and 12
+    const availableStreams = curriculumData.classLevel && curriculumData.board
+        ? getAvailableStreams(curriculumData.classLevel, curriculumData.board)
+        : null;
+    
+    // Get available subjects based on class, board, and stream
+    const availableCurriculumSubjects = curriculumData.classLevel && curriculumData.board
+        ? getSubjectsByClassAndBoard(
+            curriculumData.classLevel, 
+            curriculumData.board, 
+            curriculumData.stream || null
+          )
+        : [];
 
     const handleCurriculumSubmit = async () => {
-        if (!curriculumData.classLevel || !curriculumData.board || !curriculumData.subject) {
-            toast.error("Please fill all required fields");
+        if (!curriculumData.classLevel || !curriculumData.board) {
+            toast.error("Please select class and board");
+            return;
+        }
+        
+        if (availableStreams && !curriculumData.stream) {
+            toast.error("Please select a stream");
+            return;
+        }
+        
+        if (!curriculumData.subject) {
+            toast.error("Please select a subject");
             return;
         }
 
@@ -127,7 +156,8 @@ export default function Page() {
 
         setIsSubmitting(true);
         
-        const prompt = `Generate a comprehensive curriculum course for ${curriculumData.subject} for ${curriculumData.classLevel.replace('_', ' ')} (${curriculumData.board} board). 
+        const streamInfo = curriculumData.stream ? ` (${curriculumData.stream} stream)` : '';
+        const prompt = `Generate a comprehensive curriculum course for ${curriculumData.subject} for ${curriculumData.classLevel.replace('_', ' ')}${streamInfo} (${curriculumData.board} board). 
         Cover these topics: ${filledTopics.join(", ")}. 
         Include detailed explanations, examples, and age-appropriate learning activities.`;
 
@@ -322,70 +352,84 @@ export default function Page() {
         },
     });
 
-    const onSubmit = async (data) => {
-        setIsSubmitting(true);
+   const onSubmit = async (data) => {
+    setIsSubmitting(true);
 
-        if (!session) {
-            toast.error("Please login to generate your course");
-            setIsSubmitting(false);
-            return;
-        }
+    if (!session) {
+        toast.error("Please login to generate your course");
+        setIsSubmitting(false);
+        return;
+    }
 
+    try {
         const checkRes = await fetch("/api/roadmap/all");
-        let checkData = await checkRes.json();
+        const checkData = await checkRes.json();
 
-        checkData = checkData.docs.filter((e) => e.process === "completed");
+        const completedCount = checkData.docs.filter(e => e.process === "completed").length;
 
-        if (checkData.length > 5) {
-            toast.error(
-                "The limit of 6 courses has been reached. You can delete the existing ones to create a new one."
-            );
+        if (completedCount >= 6) {
+            toast.error("You have reached the limit of 6 courses. Delete one to create a new one.");
             setIsSubmitting(false);
             return;
         }
 
-        const prompt = `
-            Generate a structured learning roadmap for ${data.concept} at ${data.knowledgeLevel}, tailored for a ${data.difficultyLevel} learning experience, considering a ${data.timeCommitment} and aiming for completion in ${data.completionTime}, generate as many chapters as possible if the completion time is greater than or equals to 3-months. scaling chapters accordingly with key topics, objectives, resources, and exercises; if unsuitable for a structured course across all age groups, return { "error": 404 }.
-        `;
+        const prompt = `Generate a structured learning roadmap for "${data.concept}" 
+Level: ${data.knowledgeLevel}
+Style: ${data.difficultyLevel === "in-depth" ? "In-Depth" : data.difficultyLevel === "fast" ? "Fast-Paced" : "Balanced"}
+Daily time: ${data.timeCommitment.replace("-", "–")}
+Complete in: ${data.completionTime.replace("-", " ")}
+Generate maximum chapters if 3-months or longer.
+Include: chapter titles, descriptions, learning objectives, key topics.
+Return valid JSON only.`;
 
-        let res = await fetch("/api/user_prompt", {
+        const res = await fetch("/api/user_prompt", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt, difficulty: data.difficultyLevel }),
+            body: JSON.stringify({ 
+                prompt, 
+                difficulty: data.difficultyLevel 
+            }),
         });
-        const roadmapData = await res.json();
-        const id = roadmapData.id;
-        if (res.status === 400) {
-            toast.error(roadmapData.message);
+
+        const result = await res.json();
+
+        if (!res.ok || !result.id) {
+            toast.error(result.message || "Failed to start generation");
             setIsSubmitting(false);
             return;
         }
 
-        if (!id) {
-            toast.error("Failed to generate roadmap");
-            setIsSubmitting(false);
-            return;
-        }
+        toast.success("Generating your course...");
 
+        // Poll for completion
         const interval = setInterval(async () => {
-            let res = await fetch(`/api/roadmap/${id}`);
-            let data = await res.json();
-            if (data.process !== "pending") {
-                if (data.process === "completed") {
-                    toast.success("Roadmap generated successfully");
+            try {
+                const poll = await fetch(`/api/roadmap/${result.id}`);
+                const status = await poll.json();
+
+                if (status.process === "completed") {
+                    clearInterval(interval);
+                    toast.success("Course ready!");
                     showLoader();
-                    router.push(`/roadmap/${id}`);
-                } else if (data.process === "error") {
-                    toast.error(data.message);
-                    setIsSubmitting(false);
-                } else if (data.process === "unsuitable") {
-                    toast.error(data.message);
+                    router.push(`/roadmap/${result.id}`);
+                } else if (status.process === "error" || status.process === "unsuitable") {
+                    clearInterval(interval);
+                    toast.error(status.message || "Generation failed");
                     setIsSubmitting(false);
                 }
-                clearInterval(interval);
+            } catch (err) {
+                console.error("Polling error:", err);
             }
         }, 3000);
-    };
+
+        // Auto cleanup after 2 minutes
+        setTimeout(() => clearInterval(interval), 120000);
+
+    } catch (error) {
+        toast.error("Network error. Try again.");
+        setIsSubmitting(false);
+    }
+};
 
     const onError = (errors) => {
         for (const field in errors) {
@@ -663,7 +707,12 @@ export default function Page() {
                                         <label className="text-sm font-medium">Class Level</label>
                                         <Select
                                             value={curriculumData.classLevel}
-                                            onValueChange={(value) => setCurriculumData(prev => ({ ...prev, classLevel: value }))}
+                                            onValueChange={(value) => setCurriculumData(prev => ({ 
+                                                ...prev, 
+                                                classLevel: value, 
+                                                stream: "", 
+                                                subject: "" 
+                                            }))}
                                         >
                                             <SelectTrigger className="mt-2">
                                                 <SelectValue placeholder="Select class" />
@@ -680,7 +729,12 @@ export default function Page() {
                                         <label className="text-sm font-medium">Board</label>
                                         <Select
                                             value={curriculumData.board}
-                                            onValueChange={(value) => setCurriculumData(prev => ({ ...prev, board: value }))}
+                                            onValueChange={(value) => setCurriculumData(prev => ({ 
+                                                ...prev, 
+                                                board: value, 
+                                                stream: "", 
+                                                subject: "" 
+                                            }))}
                                         >
                                             <SelectTrigger className="mt-2">
                                                 <SelectValue placeholder="Select board" />
@@ -694,14 +748,74 @@ export default function Page() {
                                     </div>
                                 </div>
 
+                                {/* Stream Selection for Class 11 & 12 */}
+                                {availableStreams && (
+                                    <div>
+                                        <label className="text-sm font-medium">Stream</label>
+                                        <p className="text-xs text-muted-foreground mb-2">Select your stream</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {availableStreams.map(stream => (
+                                                <button
+                                                    key={stream}
+                                                    type="button"
+                                                    onClick={() => setCurriculumData(prev => ({ 
+                                                        ...prev, 
+                                                        stream: stream, 
+                                                        subject: "" 
+                                                    }))}
+                                                    className={`px-4 py-2 rounded-lg border transition-all ${
+                                                        curriculumData.stream === stream
+                                                            ? "bg-primary text-primary-foreground border-primary"
+                                                            : "bg-background hover:bg-accent"
+                                                    }`}
+                                                >
+                                                    {stream}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Subject Selection */}
                                 <div>
-                                    <label className="text-sm font-medium">Subject Name</label>
-                                    <Input
-                                        placeholder="e.g., Mathematics, Science, English"
-                                        value={curriculumData.subject}
-                                        onChange={(e) => setCurriculumData(prev => ({ ...prev, subject: e.target.value }))}
-                                        className="mt-2"
-                                    />
+                                    <label className="text-sm font-medium">Select Subject</label>
+                                    <p className="text-xs text-muted-foreground mb-2">Choose from available subjects</p>
+                                    {!curriculumData.classLevel || !curriculumData.board ? (
+                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                            <p className="text-sm text-muted-foreground">Select class and board to view subjects</p>
+                                        </div>
+                                    ) : availableStreams && !curriculumData.stream ? (
+                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                            <p className="text-sm text-muted-foreground">Select a stream to view subjects</p>
+                                        </div>
+                                    ) : availableCurriculumSubjects.length === 0 ? (
+                                        <div className="text-center py-8 border rounded-lg bg-muted/20">
+                                            <p className="text-sm text-muted-foreground">No subjects available</p>
+                                        </div>
+                                    ) : (
+                                        <div className="max-h-48 overflow-y-auto border rounded-lg p-2 bg-muted/10">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {availableCurriculumSubjects.map(subject => (
+                                                    <button
+                                                        key={subject.id}
+                                                        type="button"
+                                                        onClick={() => setCurriculumData(prev => ({ 
+                                                            ...prev, 
+                                                            subject: subject.name,
+                                                            topics: subject.topics || ["", "", ""]
+                                                        }))}
+                                                        className={`text-xs px-2.5 py-1.5 rounded-md transition-all ${
+                                                            curriculumData.subject === subject.name
+                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                : "bg-background hover:bg-accent border"
+                                                        }`}
+                                                    >
+                                                        {subject.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <Separator />
