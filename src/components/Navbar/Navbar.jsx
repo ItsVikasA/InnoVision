@@ -118,7 +118,7 @@ const Navbar = () => {
             }}
             className="w-[360px] h-screen bg-background/95 backdrop-blur-xl fixed top-0 left-0 flex flex-col justify-between z-10 sidebar border-r border-slate-200/20 shadow-2xl"
           >
-            <div className="flex flex-col gap-3 overflow-y-auto flex-1 p-4 pb-0">
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1 p-4 pb-0" style={{ maxHeight: 'calc(100vh - 100px)' }}>
               <Button
                 variant={"ghost"}
                 className="items-center w-max hover:bg-slate-100/80 transition-all duration-200"
