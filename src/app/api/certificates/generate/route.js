@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  addDoc,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  serverTimestamp,
-} from "firebase/firestore";
+import { getAdminDb, FieldValue } from "@/lib/firebase-admin";
 import { nanoid } from "nanoid";
 
 export async function POST(request) {
   let body;
   try {
+    const adminDb = getAdminDb();
+    if (!adminDb) {
+      return NextResponse.json(
+        { success: false, error: "Database not available. Check server configuration." },
+        { status: 500 }
+      );
+    }
+
     body = await request.json();
     const { userId, courseId } = body;
 
@@ -27,10 +25,9 @@ export async function POST(request) {
     }
 
     // Get course details — userId is user.email (project primary key)
-    const courseRef = doc(db, "users", userId, "roadmaps", courseId);
-    const courseSnap = await getDoc(courseRef);
+    const courseSnap = await adminDb.collection("users").doc(userId).collection("roadmaps").doc(courseId).get();
 
-    if (!courseSnap.exists()) {
+    if (!courseSnap.exists) {
       return NextResponse.json(
         { success: false, error: "Course not found" },
         { status: 404 }
@@ -52,10 +49,8 @@ export async function POST(request) {
     }
 
     // Return existing certificate if already generated
-    const certificatesRef = collection(db, "users", userId, "certificates");
-    const existingCerts = await getDocs(
-      query(certificatesRef, where("courseId", "==", courseId))
-    );
+    const certificatesRef = adminDb.collection("users").doc(userId).collection("certificates");
+    const existingCerts = await certificatesRef.where("courseId", "==", courseId).get();
 
     if (!existingCerts.empty) {
       const existingDoc = existingCerts.docs[0];
@@ -96,9 +91,8 @@ export async function POST(request) {
 
     // Get user display name — guard against missing user doc
     let userName = "Student";
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
+    const userSnap = await adminDb.collection("users").doc(userId).get();
+    if (userSnap.exists) {
       const userData = userSnap.data();
       userName = userData.displayName || userData.name || userData.email || "Student";
     }
@@ -126,11 +120,11 @@ export async function POST(request) {
       userName,
       completionDate,
       chapterCount,
-      issuedAt: serverTimestamp(),
+      issuedAt: FieldValue.serverTimestamp(),
       verified: true,
     };
 
-    const certRef = await addDoc(certificatesRef, certDocData);
+    const certRef = await certificatesRef.add(certDocData);
 
     // Return plain JSON-safe response (no serverTimestamp)
     return NextResponse.json({

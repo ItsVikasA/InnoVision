@@ -79,6 +79,7 @@ const CertificateGenerator = ({ certificateData }) => {
     const maxWidth = 900;
     const safeTitle = courseTitle || "Course Completion";
     const words = safeTitle.split(" ");
+    let line = "";
     let y = 470;
 
     for (let i = 0; i < words.length; i++) {

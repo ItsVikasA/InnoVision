@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { getAdminDb } from "@/lib/firebase-admin";
 
 export async function GET(request, { params }) {
   try {
+    const adminDb = getAdminDb();
+    if (!adminDb) {
+      return NextResponse.json(
+        { success: false, error: "Database not available. Check server configuration." },
+        { status: 500 }
+      );
+    }
+
     const { userId } = params;
 
     if (!userId) {
@@ -14,16 +21,15 @@ export async function GET(request, { params }) {
     }
 
     // userId is the email (URL-decoded automatically by Next.js)
-    const certificatesRef = collection(db, "users", userId, "certificates");
+    const certificatesRef = adminDb.collection("users").doc(userId).collection("certificates");
 
     let snapshot;
     try {
       // Try ordered query first (requires Firestore index on issuedAt)
-      const q = query(certificatesRef, orderBy("issuedAt", "desc"));
-      snapshot = await getDocs(q);
+      snapshot = await certificatesRef.orderBy("issuedAt", "desc").get();
     } catch {
       // Fallback: fetch all and sort in-memory if index not ready
-      snapshot = await getDocs(certificatesRef);
+      snapshot = await certificatesRef.get();
     }
 
     const certificates = snapshot.docs.map((docSnap) => {
