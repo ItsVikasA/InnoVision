@@ -83,6 +83,7 @@ InnoVision is a cutting-edge AI-powered learning platform that dynamically gener
 ### Enhanced Learning Experience
 | Feature | Description |
 |---------|-------------|
+| **Smart FAQ System** | Related questions open together (2-3 at once) for comprehensive answers |
 | **Interactive Tasks** | Quiz (MCQ), Fill-in-the-blanks, Match the Following for each chapter |
 | **AI-Powered Roadmaps** | Step-by-step learning paths organized into 8-12 chapters |
 | **Chapter Tests** | Assess understanding with chapter-wise tests |
@@ -143,7 +144,9 @@ InnoVision is a cutting-edge AI-powered learning platform that dynamically gener
 ### Platform Features
 | Feature | Description |
 |---------|-------------|
-| **Google Authentication** | Secure login with Google OAuth 2.0 |
+| **Multiple Auth Methods** | Email/Password, Google OAuth, GitHub OAuth |
+| **Password Reset** | Secure password recovery via email |
+| **Session Management** | Persistent login with secure cookies |
 | **PRO Badge** | Premium users get PRO badge next to profile |
 | **Premium Celebration** | Confetti, sound effects, and animations on premium purchase |
 | **Real-time Sync** | Data syncs across devices via Firebase |
@@ -293,15 +296,24 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_MEASUREMENT_ID=your-measurement-id
 
 # Firebase Admin (Server-side)
-FIREBASE_ADMIN_PROJECT_ID=your-project-id
-FIREBASE_ADMIN_CLIENT_EMAIL=your-service-account-email
-FIREBASE_ADMIN_PRIVATE_KEY="your-private-key"
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+FIREBASE_PRIVATE_KEY="your-private-key"
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# GitHub OAuth
+GITHUB_ID=your-github-oauth-app-id
+GITHUB_SECRET=your-github-oauth-secret
+
+# NextAuth
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
 
 # AI Services
 GEMINI_API_KEY=your-gemini-api-key
@@ -316,9 +328,10 @@ NEXT_PUBLIC_EMAILJS_SERVICE_ID=your-service-id
 NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=your-template-id
 NEXT_PUBLIC_EMAILJS_USER_ID=your-user-id
 
-# NextAuth
-NEXTAUTH_SECRET=your-nextauth-secret
-NEXTAUTH_URL=http://localhost:3000
+# Brevo (Email Service)
+BREVO_API_KEY=your-brevo-api-key
+SENDER_EMAIL=your-sender-email
+SENDER_NAME=InnoVision
 ```
 
 ---
