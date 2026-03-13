@@ -1,6 +1,16 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { 
+  GoogleAuthProvider, 
+  GithubAuthProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile
+} from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
@@ -88,6 +98,37 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const emailSignUp = async (email, password, name) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      // Update display name
+      await updateProfile(result.user, { displayName: name });
+      await saveUserToFirestore(result.user, "email", name);
+      return result.user;
+    } catch (error) {
+      console.error("Error signing up with email:", error);
+      throw error;
+    }
+  };
+
+  const emailSignIn = async (email, password) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result.user;
+    } catch (error) {
+      console.error("Error signing in with email:", error);
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error("Error sending password reset email:", error);
+      throw error;
+    }
+  };
 
   const logout = async () => {
     try {
@@ -101,16 +142,16 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const saveUserToFirestore = async (user, providerName) => {
+  const saveUserToFirestore = async (user, providerName, displayName = null) => {
     try {
       const userRef = doc(db, "users", user.email);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
         await setDoc(userRef, {
-          name: user.displayName,
+          name: displayName || user.displayName || user.email.split('@')[0],
           email: user.email,
-          image: user.photoURL,
+          image: user.photoURL || null,
           provider: providerName,
           xp: 0,
           roadmapLevel: {
@@ -138,7 +179,17 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, googleSignIn, githubSignIn, logout, getToken }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      googleSignIn, 
+      githubSignIn, 
+      emailSignUp,
+      emailSignIn,
+      resetPassword,
+      logout, 
+      getToken 
+    }}>
       {children}
     </AuthContext.Provider>
   );
