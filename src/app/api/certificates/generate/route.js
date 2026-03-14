@@ -80,6 +80,7 @@ export async function POST(request) {
           userName: existingData.userName,
           completionDate: existingData.completionDate,
           chapterCount: existingData.chapterCount,
+          totalHours: existingData.totalHours || 0,
           issuedAt,
           verified: existingData.verified,
         },
@@ -103,6 +104,38 @@ export async function POST(request) {
 
     const chapterCount = chapters.length;
 
+    // Calculate total course hours from chapters
+    let totalHours = 0;
+    chapters.forEach(chapter => {
+      // Check for duration in various possible formats
+      if (chapter.duration) {
+        // If duration is a number, assume it's in minutes
+        if (typeof chapter.duration === 'number') {
+          totalHours += chapter.duration / 60;
+        }
+        // If duration is a string like "30 mins" or "2 hours"
+        else if (typeof chapter.duration === 'string') {
+          const durationStr = chapter.duration.toLowerCase();
+          if (durationStr.includes('hour')) {
+            const hours = parseFloat(durationStr);
+            if (!isNaN(hours)) totalHours += hours;
+          } else if (durationStr.includes('min')) {
+            const mins = parseFloat(durationStr);
+            if (!isNaN(mins)) totalHours += mins / 60;
+          }
+        }
+      }
+      // Fallback: estimate based on content length if no duration
+      else if (chapter.content) {
+        // Rough estimate: 200 words per minute reading speed
+        const wordCount = chapter.content.split(/\s+/).length;
+        totalHours += (wordCount / 200) / 60;
+      }
+    });
+
+    // Round to 1 decimal place, minimum 0.5 hours
+    totalHours = Math.max(0.5, Math.round(totalHours * 10) / 10);
+
     const completionDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -120,6 +153,7 @@ export async function POST(request) {
       userName,
       completionDate,
       chapterCount,
+      totalHours,
       issuedAt: FieldValue.serverTimestamp(),
       verified: true,
     };
@@ -138,6 +172,7 @@ export async function POST(request) {
         userName,
         completionDate,
         chapterCount,
+        totalHours,
         issuedAt: issuedAtISO,
         verified: true,
       },

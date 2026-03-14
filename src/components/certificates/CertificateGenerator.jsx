@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 const CertificateGenerator = ({ certificateData }) => {
   const canvasRef = useRef(null);
-  const { userName, courseTitle, completionDate, certificateId, chapterCount } = certificateData;
+  const { userName, courseTitle, completionDate, certificateId, chapterCount, totalHours } = certificateData;
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -101,11 +101,17 @@ const CertificateGenerator = ({ certificateData }) => {
     const detailsY = y + 80;
     ctx.fillText(`Completed on: ${completionDate}`, canvas.width / 2, detailsY);
     ctx.fillText(`Total Chapters: ${chapterCount}`, canvas.width / 2, detailsY + 35);
+    
+    // Display total hours
+    const hoursText = totalHours 
+      ? `Course Duration: ${totalHours} ${totalHours === 1 ? 'hour' : 'hours'}`
+      : 'Course Duration: N/A';
+    ctx.fillText(hoursText, canvas.width / 2, detailsY + 70);
 
     // Certificate ID
     ctx.font = "16px monospace";
     ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-    ctx.fillText(`Certificate ID: ${certificateId}`, canvas.width / 2, detailsY + 75);
+    ctx.fillText(`Certificate ID: ${certificateId}`, canvas.width / 2, detailsY + 110);
 
     // Footer
     ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
