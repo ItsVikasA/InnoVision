@@ -6,11 +6,12 @@ export async function POST(request) {
   try {
     const courseData = await request.json();
 
-    // Save to published courses collection
+    // Save to published courses collection with pending status for admin approval
     const docRef = await adminDb.collection("published_courses").add({
       ...courseData,
-      status: "published",
-      publishedAt: new Date().toISOString(),
+      status: "pending",
+      approvalStatus: "pending",
+      submittedAt: new Date().toISOString(),
     });
 
     // Create notification for the creator
@@ -18,20 +19,20 @@ export async function POST(request) {
       try {
         await createNotification(adminDb, {
           userId: courseData.createdBy,
-          title: "Course Published!",
-          body: `Your course "${courseData.title}" is now published and live.`,
-          type: "achievement",
-          link: "/courses", // Link to the public courses list or similar
+          title: "Course Submitted for Review",
+          body: `Your course "${courseData.title}" has been submitted and is awaiting admin approval.`,
+          type: "info",
+          link: "/studio",
         });
       } catch (notifError) {
-        console.warn("Failed to create publish notification:", notifError);
+        console.warn("Failed to create submission notification:", notifError);
       }
     }
 
     return NextResponse.json({
       success: true,
       id: docRef.id,
-      message: "Course published successfully",
+      message: "Course submitted for approval",
     });
   } catch (error) {
     console.error("Error publishing course:", error);

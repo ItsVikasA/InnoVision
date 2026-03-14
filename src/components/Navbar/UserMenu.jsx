@@ -31,6 +31,7 @@ import {
   User,
   Sun,
   Moon,
+  Shield,
 } from "lucide-react";
 import PremiumGoogleTranslate from "../PremiumGoogleTranslate";
 
@@ -48,6 +49,9 @@ const UserMenu = ({
   toggleNightMode,
   signOutUser,
 }) => {
+  const SUPER_ADMIN_EMAIL = "vickkie028@gmail.com";
+  const isAdmin = user?.email === SUPER_ADMIN_EMAIL;
+
   return (
     <div className="flex items-center gap-1 sm:gap-2">
       {/* Profile Avatar - Direct Link */}
@@ -94,6 +98,15 @@ const UserMenu = ({
               Profile
             </Link>
           </DropdownMenuItem>
+
+          {isAdmin && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin/courses" className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Shield className="h-4 w-4" />
+                Admin Dashboard
+              </Link>
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuItem asChild>
             <Link href="/gamification" className="flex items-center gap-2">

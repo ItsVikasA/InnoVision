@@ -13,7 +13,9 @@ export async function GET(request) {
     }
 
     const coursesRef = adminDb.collection("published_courses");
-    const q = coursesRef.where("status", "==", "published");
+    const q = coursesRef
+      .where("status", "==", "published")
+      .where("approvalStatus", "==", "approved");
     const querySnapshot = await q.get();
 
     const courses = [];

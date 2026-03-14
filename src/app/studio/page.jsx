@@ -122,7 +122,7 @@ export default function StudioPage() {
       });
 
       if (res.ok) {
-        toast.success(editingCourseId ? "Course updated successfully!" : "Course published successfully!");
+        toast.success(editingCourseId ? "Course updated successfully!" : "Course submitted for approval!");
         // Refresh the courses list
         await fetchPublishedCourses();
         // Switch to courses tab to show the published course

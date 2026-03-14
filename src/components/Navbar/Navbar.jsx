@@ -146,8 +146,20 @@ const Navbar = () => {
     { href: "/features", label: "Features", icon: Trophy, description: "Platform features" },
     { href: "/gamification", label: "Achievements", icon: Zap, description: "Badges & rewards" },
     { href: "/demo", label: "Demo", icon: BarChart3, description: "See how it works" },
+    { href: "/community", label: "Community", icon: MessageSquare, description: "Discussions & forums" },
     { href: "/contact", label: "Contact", icon: MessageSquare, description: "Get in touch" },
   ];
+
+  // Add admin link for super admin
+  const SUPER_ADMIN_EMAIL = "vickkie028@gmail.com";
+  if (user?.email === SUPER_ADMIN_EMAIL) {
+    moreMenuItems.unshift({
+      href: "/admin/courses",
+      label: "Admin Dashboard",
+      icon: Crown,
+      description: "Manage course approvals"
+    });
+  }
 
   // Landing page navigation
   const landingNavItems = [
