@@ -1,34 +1,17 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getServerSession } from "@/lib/auth-server";
 import { adminDb } from "@/lib/firebase-admin";
 
-export const openai = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const chapterModel = genAI.getGenerativeModel({
+  model: "gemini-2.5-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+    maxOutputTokens: 8192,
+  },
 });
-
-function parseJson(response) {
-  const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/);
-
-  if (jsonMatch) {
-    const jsonString = jsonMatch[1].trim();
-    try {
-      return JSON.parse(jsonString);
-    } catch (error) {
-      console.error("Error parsing extracted JSON:", error);
-      return null;
-    }
-  } else {
-    console.error("No JSON found in the response, trying raw parse...");
-    try {
-      return JSON.parse(response);
-    } catch (error) {
-      console.error("Final JSON parse failed:", error);
-      return null;
-    }
-  }
-}
 
 async function updateDatabase(content, chapter, roadmapId, session) {
   const docRef = adminDb
@@ -63,26 +46,11 @@ async function generateChapter(prompt, number, roadmapId, session) {
     .doc(number);
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gemini-2.0-flash",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a chapter content generator that creates structured, engaging, and detailed educational content across various subjects based on provided chapter details in JSON format , including title, learningObjectives, and contentOutline, returning a JSON response with title, chapterNumber, learningObjectives, chapterDescription, subtopics (each with a header, title, content as an array of {type: (header1, header2, header3, para, points, code), content: (text)}, where points are in markdown, let the content be array of points for points type. If type is code, content is a Markdown-formatted string in the exact format: ```(programming language name) (code)```, otherResources which properly align with the topic(upto 5 resources), along with the well-balanced tasks (upto 3 tasks) in JSON format (multiple-choice|fill-in-the-blank|match-the-following), ensuring task type aligns with key concepts, fill-in-the-blanks strictly use '________' for blanks and include an array of acceptableAnswers with synonyms or variations of the correct answer and include an answer, multiple-choice tasks have four options, match-the-following has terms element containing lhs array and rhs array, and their match indexes as the answer array and an explanation, and answers are formatted properly while maintaining a structured and explanation is provided for all the tasks, let everything be simple string don't give latex responses.",
-        },
-        {
-          role: "user",
-          content: JSON.stringify(prompt),
-        },
-      ],
-    });
+    const systemInstruction = "You are a chapter content generator that creates structured, engaging, and detailed educational content across various subjects based on provided chapter details in JSON format, including title, learningObjectives, and contentOutline, returning a JSON response with title, chapterNumber, learningObjectives, chapterDescription, subtopics (each with a header, title, content as an array of {type: (header1, header2, header3, para, points, code), content: (text)}, where points are in markdown, let the content be array of points for points type. If type is code, content is a Markdown-formatted string in the exact format: ```(programming language name) (code)```, otherResources which properly align with the topic(upto 5 resources), along with the well-balanced tasks (upto 3 tasks) in JSON format (multiple-choice|fill-in-the-blank|match-the-following), ensuring task type aligns with key concepts, fill-in-the-blanks strictly use '________' for blanks and include an array of acceptableAnswers with synonyms or variations of the correct answer and include an answer, multiple-choice tasks have four options, match-the-following has terms element containing lhs array and rhs array, and their match indexes as the answer array and an explanation, and answers are formatted properly while maintaining a structured and explanation is provided for all the tasks, let everything be simple string don't give latex responses.";
 
-    const data = parseJson(response.choices[0].message.content);
-
-    if (!data) {
-      throw new Error("Failed to parse AI response into valid JSON");
-    }
+    const result = await chapterModel.generateContent(`${systemInstruction}\n\nChapter details: ${JSON.stringify(prompt)}`);
+    const rawText = result.response.text();
+    const data = JSON.parse(rawText);
 
     await updateDatabase(data, number, roadmapId, session);
   } catch (error) {
