@@ -14,11 +14,7 @@ export async function POST(request) {
 
     const { courseId, chapterNumber, chapterContent, chapterTitle, difficulty = "intermediate" } = await request.json();
 
-<<<<<<< HEAD
     const model = genAI.getGenerativeModel({ model: "gemini-3.7-flash" });
-=======
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
->>>>>>> 3775a552789c8288a6474aff86f000af9934623d
 
     const prompt = `Generate a comprehensive quiz for this chapter of an educational course.
 

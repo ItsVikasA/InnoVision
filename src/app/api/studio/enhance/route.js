@@ -15,11 +15,7 @@ export async function POST(request) {
     }
 
     const model = genAI.getGenerativeModel({
-<<<<<<< HEAD
       model: "gemini-3.7-flash",
-=======
-      model: "gemini-2.5-flash",
->>>>>>> 3775a552789c8288a6474aff86f000af9934623d
     });
 
     const prompt = `
