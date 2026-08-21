@@ -28,7 +28,7 @@ Prevents chapters from being deleted when AI generation fails or times out, allo
 ### Key Changes
 - Updated [src/app/api/chapter-prompt/route.js](file:///c:/Users/visha/Downloads/Innovision-Open-Source/src/app/api/chapter-prompt/route.js):
   - Documents are now marked with `process: "failed"` and populated with an error message instead of being deleted.
-  - Switched the generation model to `gemini-2.0-flash`.
+  - Switched the generation model to `gemini-3.7-flash`.
   - Implemented a 2-minute timeout in [cleanupStuckChapters](file:///c:/Users/visha/Downloads/Innovision-Open-Source/src/app/api/chapter-prompt/route.js#94-114).
 
 ### Verification Plan

@@ -4,8 +4,8 @@ import { getAdminDb } from "@/lib/firebase-admin";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const MODELS = [
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
+    "gemini-3.7-flash",
+    "gemini-3.7-flash-lite",
 ];
 
 const MAX_RETRIES = 3;
