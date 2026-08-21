@@ -29,7 +29,11 @@ export async function POST(req) {
             );
         }
 
+<<<<<<< HEAD
         const model = genAI.getGenerativeModel({ model: "gemini-3.7-flash" });
+=======
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+>>>>>>> 3775a552789c8288a6474aff86f000af9934623d
         let prompt = "";
         let jsonMode = false;
 

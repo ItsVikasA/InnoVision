@@ -8,7 +8,11 @@ import { createNotification } from "@/lib/create-notification";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
+<<<<<<< HEAD
   model: "gemini-3.7-flash",
+=======
+  model: "gemini-2.5-flash",
+>>>>>>> 3775a552789c8288a6474aff86f000af9934623d
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,

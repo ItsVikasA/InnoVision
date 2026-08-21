@@ -137,7 +137,11 @@ export async function GET(request) {
         `;
 
         const aiResponse = await openai.chat.completions.create({
+<<<<<<< HEAD
             model: "gemini-3.7-flash",
+=======
+            model: "gemini-2.5-flash",
+>>>>>>> 3775a552789c8288a6474aff86f000af9934623d
             messages: [
                 { role: "system", content: "You are a smart educational counselor. Recommend specific courses or generate new roadmap ideas based on user history." },
                 { role: "user", content: prompt }
